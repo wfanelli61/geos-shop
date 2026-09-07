@@ -1,0 +1,241 @@
+/* Paleta por tienda. Los valores son canales RGB sueltos para que Tailwind
+   pueda aplicarles transparencia (bg-brand-50/60, etc.).
+
+   Damas  → rosado de Geo's Shop
+   Niños  → turquesa de Geo's Shop Kids (el color de "Kids" en el logo)
+
+   Cambiar el atributo data-store en <html> repinta toda la interfaz. */
+:root,
+html[data-store="damas"] {
+  --brand-50:  254 243 248;
+  --brand-100: 252 228 239;
+  --brand-200: 249 201 223;
+  --brand-300: 244 163 199;
+  --brand-400: 236 119 169;
+  --brand-500: 222  84 152;
+  --brand-600: 194  58 128;
+  --brand-700: 158  44 104;
+  --brand-800: 124  36  84;
+  --brand-900:  97  28  66;
+
+  --fondo-1: #FDE7F1;
+  --fondo-2: #FBEFF5;
+  --fondo-3: #F7EAF3;
+}
+
+html[data-store="ninos"] {
+  --brand-50:  238 253 252;
+  --brand-100: 205 248 246;
+  --brand-200: 157 238 235;
+  --brand-300:  99 224 220;
+  --brand-400:  52 205 201;
+  --brand-500:  24 181 177;
+  --brand-600:  18 168 163;
+  --brand-700:  15 124 122;
+  --brand-800:  17  99  97;
+  --brand-900:  19  78  77;
+
+  --fondo-1: #E2F8F6;
+  --fondo-2: #EDF7F6;
+  --fondo-3: #E8F5F4;
+}
+
+/* Fondo con color para que los cuadros blancos resalten */
+html, body {
+  background: linear-gradient(160deg, var(--fondo-1) 0%, var(--fondo-2) 45%, var(--fondo-3) 100%);
+  background-attachment: fixed;
+  transition: background 0.35s ease;
+}
+
+/* ---------------------------------------------------------------- Tarjetas */
+
+/* Tarjeta base: blanca sobre el fondo rosado, con borde y sombra propios
+   para que se distinga claramente del fondo. */
+.card {
+  background: #fff;
+  border-radius: 1rem;
+  border: 1px solid rgb(var(--brand-200));
+  box-shadow:
+    0 1px 2px rgb(var(--brand-900) / 0.05),
+    0 4px 12px -2px rgb(var(--brand-600) / 0.10);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+  box-shadow:
+    0 2px 4px rgb(var(--brand-900) / 0.06),
+    0 8px 20px -4px rgb(var(--brand-600) / 0.16);
+}
+
+/* ------------------------------------------------------------------ Tablas */
+
+.thead-row {
+  background: linear-gradient(180deg, rgb(var(--brand-100)) 0%, rgb(var(--brand-50)) 100%);
+  border-bottom: 2px solid rgb(var(--brand-200));
+}
+
+.thead-row th {
+  color: rgb(var(--brand-700));
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Filas alternadas: hace mucho más fácil seguir una fila larga con la vista */
+tbody tr:nth-child(even) {
+  background-color: rgb(var(--brand-50) / 0.6);
+}
+
+tbody tr:hover {
+  background-color: rgb(var(--brand-200) / 0.35);
+}
+
+/* --------------------------------------------------------------- Navegación */
+
+.nav-tab, .store-tab, .cat-tab {
+  transition: all 0.15s ease;
+}
+
+.nav-tab:hover:not(.text-brand-700) {
+  background: rgb(var(--brand-50));
+  color: rgb(var(--brand-700));
+}
+
+/* La barra lateral se separa del contenido con un borde de marca */
+#sidebar {
+  border-right: 1px solid rgb(var(--brand-200));
+  box-shadow: 1px 0 12px rgb(var(--brand-600) / 0.07);
+}
+
+/* ---------------------------------------------------------------- Formularios */
+
+input, select, textarea {
+  background: #fff;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: rgb(var(--brand-300));
+}
+
+input[type="date"] { color: #334155; }
+
+/* ------------------------------------------------------------------ Detalles */
+
+table thead th { white-space: nowrap; }
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgb(var(--brand-300)); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--brand-500)); }
+
+/* Las tarjetas dentro de un modal no llevan sombra propia: el modal ya la tiene */
+#modal-root .card { box-shadow: none; }
+
+/* ------------------------------------------------------- Marca por tienda */
+
+/* Colores tomados del logo de Geo's Shop Kids: el rosado del nombre, el
+   turquesa de "Kids" y el aro degradado rosa → naranja → amarillo. */
+:root {
+  --kids-rosado:   #E8308A;
+  --kids-turquesa: #22C4C0;
+  --kids-naranja:  #F98C1D;
+  --kids-amarillo: #FFD200;
+  --geo-rosado:    #C23A80;
+}
+
+/* El nombre de la tienda: en Damas va todo rosado; en Niños se le suma
+   "Kids" en turquesa, igual que el logo. */
+.brand-primary { color: var(--geo-rosado); }
+html[data-store="ninos"] .brand-primary { color: var(--kids-rosado); }
+.brand-accent  { color: var(--kids-turquesa); }
+
+/* Aro del avatar. En Damas es el rosado plano de siempre; en Niños se
+   convierte en el degradado del logo. */
+.brand-avatar {
+  background: #FCE4EF;
+  box-shadow: 0 0 0 4px rgb(var(--brand-50));
+}
+
+.brand-avatar-initial { color: var(--geo-rosado); }
+
+html[data-store="ninos"] .brand-avatar {
+  background: #F1F5F5;
+  box-shadow: none;
+  border: 4px solid transparent;
+  background-image:
+    linear-gradient(#F4F7F7, #F4F7F7),
+    conic-gradient(from 200deg,
+      var(--kids-rosado) 0deg,
+      var(--kids-naranja) 110deg,
+      var(--kids-amarillo) 200deg,
+      var(--kids-turquesa) 290deg,
+      var(--kids-rosado) 360deg);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+html[data-store="ninos"] .brand-avatar-initial { color: var(--kids-rosado); }
+
+/* ------------------------------------------------------ Fotos de prendas */
+
+/* Miniatura en la tabla del catálogo y en el buscador de ventas. */
+.foto-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 0.6rem;
+  object-fit: cover;
+  background: rgb(var(--brand-50));
+  border: 1px solid rgb(var(--brand-200));
+  cursor: zoom-in;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.foto-thumb:hover {
+  transform: scale(1.06);
+  box-shadow: 0 4px 12px rgb(var(--brand-600) / 0.25);
+}
+
+/* Cuadrito gris cuando la prenda todavía no tiene foto. */
+.foto-vacia {
+  width: 44px;
+  height: 44px;
+  border-radius: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(var(--brand-50));
+  border: 1px dashed rgb(var(--brand-200));
+  color: rgb(var(--brand-300));
+}
+
+/* Vista previa dentro del formulario de prenda. */
+.foto-preview {
+  width: 100%;
+  height: 190px;
+  object-fit: contain;
+  border-radius: 0.75rem;
+  background: #fff;
+  border: 1px solid rgb(var(--brand-200));
+}
+
+/* Zona para soltar o elegir la foto. */
+.foto-dropzone {
+  border: 2px dashed rgb(var(--brand-200));
+  border-radius: 0.75rem;
+  background: rgb(var(--brand-50) / 0.5);
+  transition: border-color 0.15s ease, background 0.15s ease;
+  cursor: pointer;
+}
+
+.foto-dropzone:hover,
+.foto-dropzone.dragging {
+  border-color: rgb(var(--brand-400));
+  background: rgb(var(--brand-100) / 0.6);
+}
+
+/* Foto ampliada al tocar una miniatura. */
+.foto-lightbox {
+  max-width: min(90vw, 720px);
+  max-height: 85vh;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.45);
+}

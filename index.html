@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geo's Shop — Inventario y Ventas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Si el CDN de Tailwind no cargó (sin internet, o bloqueado), esta línea
+    // fallaría y arrastraría al resto del arranque. Se comprueba primero para
+    // que el sistema siga abriendo aunque los estilos lleguen incompletos.
+    if (typeof tailwind === 'undefined') { window.tailwind = {}; }
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            brand: ['"Dancing Script"', 'cursive'],
+          },
+          colors: {
+            // La paleta viene de variables CSS para poder cambiarla completa
+            // según la tienda activa (rosado para Damas, azul para Niños).
+            brand: {
+              50:  'rgb(var(--brand-50) / <alpha-value>)',
+              100: 'rgb(var(--brand-100) / <alpha-value>)',
+              200: 'rgb(var(--brand-200) / <alpha-value>)',
+              300: 'rgb(var(--brand-300) / <alpha-value>)',
+              400: 'rgb(var(--brand-400) / <alpha-value>)',
+              500: 'rgb(var(--brand-500) / <alpha-value>)',
+              600: 'rgb(var(--brand-600) / <alpha-value>)',
+              700: 'rgb(var(--brand-700) / <alpha-value>)',
+              800: 'rgb(var(--brand-800) / <alpha-value>)',
+              900: 'rgb(var(--brand-900) / <alpha-value>)',
+            },
+            // Rosado fijo del logo: no cambia aunque cambie la tienda.
+            geo: { 100: '#FCE4EF', 200: '#F9C9DF', 600: '#C23A80', 700: '#9E2C68' },
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="min-h-screen text-slate-800 font-sans">
+
+  <div class="flex min-h-screen">
+    <aside id="sidebar" class="w-72 shrink-0 bg-white border-r border-brand-100 flex flex-col fixed lg:static inset-y-0 left-0 z-50 -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-out">
+      <div class="p-5 flex items-center gap-3 border-b border-brand-50">
+        <div class="brand-avatar w-14 h-14 rounded-full flex items-center justify-center shrink-0">
+          <span id="brand-initial" class="brand-avatar-initial font-brand text-2xl leading-none -mt-0.5">G</span>
+        </div>
+        <div class="min-w-0">
+          <div id="brand-name" class="font-brand text-2xl leading-tight truncate"></div>
+          <div id="brand-tagline" class="text-[10px] text-slate-400 tracking-wider uppercase">Panel de Gestión</div>
+        </div>
+        <button id="btn-close-sidebar" class="ml-auto lg:hidden text-slate-400 hover:text-slate-600 p-1">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="p-4">
+        <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">Tienda Activa</p>
+        <div class="flex bg-brand-50 rounded-xl p-1 gap-1">
+          <button class="store-tab flex-1 px-2 py-2 rounded-lg text-xs sm:text-sm font-medium transition text-center" data-store="damas">Damas</button>
+          <button class="store-tab flex-1 px-2 py-2 rounded-lg text-xs sm:text-sm font-medium transition text-center" data-store="ninos">Niños</button>
+        </div>
+      </div>
+
+      <nav class="flex-1 px-3 flex flex-col gap-1 mt-1 overflow-y-auto">
+        <button class="nav-tab flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 transition" data-view="dashboard">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+          Inicio
+        </button>
+        <button class="nav-tab flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 transition" data-view="catalogo">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"></path><circle cx="7" cy="7" r="1.5"></circle></svg>
+          Catálogo e Inventario
+        </button>
+        <button class="nav-tab flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 transition" data-view="venta">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          Nueva Venta
+        </button>
+        <button class="nav-tab flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 transition" data-view="apartados">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+          Apartados
+        </button>
+        <button class="nav-tab flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 transition" data-view="clientes">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path></svg>
+          Clientes
+        </button>
+        <button class="nav-tab flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 transition" data-view="auditoria">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+          Auditoría
+        </button>
+        <button class="nav-tab flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 transition" data-view="reportes">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
+          Reportes
+        </button>
+      </nav>
+
+      <div class="p-3 border-t border-brand-50 relative">
+        <button id="btn-settings" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-brand-50 hover:text-brand-700 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Ajustes de Datos
+        </button>
+        <div id="settings-menu" class="hidden absolute left-3 right-3 bottom-14 bg-white rounded-xl shadow-xl border border-brand-100 p-2 z-50">
+          <p class="text-xs text-slate-400 px-3 pt-2 pb-1">Configuración</p>
+          <button id="btn-set-rate" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-brand-50 text-slate-700">Tasa del día (Bs/USD)</button>
+          <button id="btn-restock-list" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-brand-50 text-slate-700">Prendas por reponer</button>
+          <p class="text-xs text-slate-400 px-3 pt-2 pb-1">Respaldo</p>
+          <button id="btn-export" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-brand-50 text-slate-700">Descargar respaldo</button>
+          <button id="btn-import" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-brand-50 text-slate-700">Importar respaldo</button>
+          <input type="file" id="import-file" accept="application/json" class="hidden">
+          <p class="text-xs text-slate-400 px-3 pt-2 pb-1">Datos de prueba</p>
+          <button id="btn-reset-data" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-brand-50 text-slate-700">Restaurar datos de ejemplo</button>
+          <button id="btn-clear-data" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-rose-50 text-rose-600">Borrar todos los datos</button>
+        </div>
+      </div>
+    </aside>
+
+    <div id="sidebar-backdrop" class="hidden fixed inset-0 bg-slate-900/40 z-40 lg:hidden"></div>
+
+    <div class="flex-1 flex flex-col min-w-0">
+      <header class="bg-white/80 backdrop-blur border-b border-brand-100 sticky top-0 z-30">
+        <div class="px-4 sm:px-6 py-3.5 flex items-center gap-3">
+          <button id="btn-open-sidebar" class="lg:hidden text-slate-500 hover:text-brand-600 p-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          </button>
+          <div>
+            <h1 id="page-title" class="font-semibold text-slate-800 leading-tight">Inicio</h1>
+            <p id="page-subtitle" class="text-xs text-slate-400 leading-tight"></p>
+          </div>
+          <div class="ml-auto flex items-center gap-3">
+            <div id="rate-badge"></div>
+            <div id="header-date" class="hidden md:block text-xs sm:text-sm text-slate-400 capitalize text-right"></div>
+          </div>
+        </div>
+      </header>
+
+      <main class="flex-1 px-4 sm:px-6 py-6 max-w-6xl w-full mx-auto">
+        <div id="view-dashboard"></div>
+        <div id="view-catalogo" class="hidden"></div>
+        <div id="view-venta" class="hidden"></div>
+        <div id="view-apartados" class="hidden"></div>
+        <div id="view-clientes" class="hidden"></div>
+        <div id="view-auditoria" class="hidden"></div>
+        <div id="view-reportes" class="hidden"></div>
+      </main>
+    </div>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast-container" class="fixed bottom-5 right-5 flex flex-col gap-2 z-[100]"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/photos.js"></script>
+  <script src="js/rate.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/restock.js"></script>
+  <script src="js/sales.js"></script>
+  <script src="js/layaway.js"></script>
+  <script src="js/clients.js"></script>
+  <script src="js/audit.js"></script>
+  <script src="js/reports.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
