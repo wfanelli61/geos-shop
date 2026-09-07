@@ -618,5 +618,11 @@ const Sales = (() => {
     resetWizard();
   }
 
-  return { render, syncStore };
+  // Prendas cargadas en la venta que se está armando. Lo consulta el cierre de
+  // sesión para no perder un carrito a medias sin avisar.
+  function pendingCount() {
+    return cart.reduce((s, i) => s + i.qty, 0);
+  }
+
+  return { render, syncStore, pendingCount };
 })();

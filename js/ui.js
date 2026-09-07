@@ -158,15 +158,21 @@ function renderUserChip() {
 
   cont.innerHTML = `
     <div class="relative">
-      <button id="btn-user-menu" class="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-brand-50 transition text-left">
-        <span class="w-9 h-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-semibold shrink-0">${iniciales}</span>
-        <span class="min-w-0 flex-1">
-          <span class="block text-sm font-medium text-slate-700 truncate">${user.name}</span>
-          <span class="block text-[11px] text-slate-400 truncate">${rol.label}</span>
-        </span>
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-      </button>
-      <div id="user-menu" class="hidden absolute left-0 right-0 bottom-12 bg-white rounded-xl shadow-xl border border-brand-100 p-2 z-50">
+      <div class="flex items-center gap-1">
+        <button id="btn-user-menu" class="min-w-0 flex-1 flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-brand-50 transition text-left">
+          <span class="w-9 h-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-semibold shrink-0">${iniciales}</span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-medium text-slate-700 truncate">${user.name}</span>
+            <span class="block text-[11px] text-slate-400 truncate">${rol.label}</span>
+          </span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+        </button>
+        <button id="btn-logout-directo" title="Cerrar sesión" aria-label="Cerrar sesión"
+          class="shrink-0 p-2.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </button>
+      </div>
+      <div id="user-menu" class="hidden absolute left-0 right-0 bottom-14 bg-white rounded-xl shadow-xl border border-brand-100 p-2 z-50">
         <p class="text-xs text-slate-400 px-3 pt-2 pb-1 truncate">Conectada como ${user.username}</p>
         <button id="btn-my-pass" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-brand-50 text-slate-700">Cambiar mi contraseña</button>
         <button id="btn-logout" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-rose-50 text-rose-600">Cerrar sesión</button>
@@ -184,6 +190,11 @@ function renderUserChip() {
     Users.openPasswordModal(Auth.currentUser(), { propia: true });
   });
   document.getElementById('btn-logout').addEventListener('click', () => cerrarSesion());
+  // El mismo cierre de sesión, a un toque y sin abrir el menú.
+  document.getElementById('btn-logout-directo').addEventListener('click', (e) => {
+    e.stopPropagation();
+    cerrarSesion();
+  });
 }
 
 function setActiveStoreButtons(storeId) {

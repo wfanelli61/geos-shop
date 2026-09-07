@@ -72,8 +72,18 @@ probarlas:
   de tienda: no tiene entre qué elegir.
 - **Vendedora — Tienda de Niños** — igual, solo la tienda de niños.
 
-La sesión queda abierta al recargar la página y se cierra desde la ficha del
-usuario, abajo a la izquierda.
+### Cerrar sesión
+
+Abajo a la izquierda, junto al nombre de quien está conectada, hay un botón de
+salida (la flecha saliendo de la puerta). Un toque, se confirma, y el sistema
+vuelve a la pantalla de entrada. La misma opción está dentro del menú de la
+ficha, para quien la busque ahí.
+
+Si hay una venta a medias sin registrar, el sistema lo advierte antes de cerrar:
+ese carrito solo vive en memoria y se pierde al salir.
+
+La sesión queda abierta al recargar la página, así que no hay que volver a
+entrar cada vez que se refresca.
 
 El sistema no se queda nunca sin quien lo administre: no deja eliminar,
 desactivar ni cambiarle el rol a la última administradora activa.

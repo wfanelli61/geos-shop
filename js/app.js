@@ -361,11 +361,19 @@ async function bootApp() {
 }
 
 function cerrarSesion() {
-  if (!confirmDialog('¿Cerrar la sesión?')) return;
+  // Una venta a medias vive solo en memoria: al salir se pierde. Más vale
+  // decirlo antes que dejar que se caiga en silencio.
+  const enElCarrito = Sales.pendingCount();
+  const aviso = enElCarrito > 0
+    ? `Tienes una venta sin terminar con ${enElCarrito} prenda(s) en el carrito.\n\nSi cierras la sesión se pierde. ¿Cerrar de todos modos?`
+    : '¿Cerrar la sesión?';
+  if (!confirmDialog(aviso)) return;
+
   Auth.logout();
   closeModal();
   // Se vuelve al punto de partida para que la siguiente persona no herede la
-  // vista ni la tienda de la anterior.
+  // vista, la tienda ni el carrito de la anterior.
+  Sales.syncStore();
   AppState.currentView = 'dashboard';
   AppState.currentStore = 'damas';
   Login.show();
