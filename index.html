@@ -46,7 +46,9 @@
 </head>
 <body class="min-h-screen text-slate-800 font-sans">
 
-  <div class="flex min-h-screen">
+  <div id="login-root" class="hidden"></div>
+
+  <div id="app-root" class="hidden flex min-h-screen">
     <aside id="sidebar" class="w-72 shrink-0 bg-white border-r border-brand-100 flex flex-col fixed lg:static inset-y-0 left-0 z-50 -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-out">
       <div class="p-5 flex items-center gap-3 border-b border-brand-50">
         <div class="brand-avatar w-14 h-14 rounded-full flex items-center justify-center shrink-0">
@@ -63,10 +65,8 @@
 
       <div class="p-4">
         <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">Tienda Activa</p>
-        <div class="flex bg-brand-50 rounded-xl p-1 gap-1">
-          <button class="store-tab flex-1 px-2 py-2 rounded-lg text-xs sm:text-sm font-medium transition text-center" data-store="damas">Damas</button>
-          <button class="store-tab flex-1 px-2 py-2 rounded-lg text-xs sm:text-sm font-medium transition text-center" data-store="ninos">Niños</button>
-        </div>
+        <!-- Se arma desde JS: cada usuario ve solo las tiendas de su modo de acceso. -->
+        <div id="store-switcher"></div>
       </div>
 
       <nav class="flex-1 px-3 flex flex-col gap-1 mt-1 overflow-y-auto">
@@ -94,13 +94,21 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
           Auditoría
         </button>
+        <button class="nav-tab hidden flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 transition" data-view="usuarios" data-requiere="manageUsers">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 11h-6"></path></svg>
+          Usuarios
+        </button>
         <button class="nav-tab flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 transition" data-view="reportes">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
           Reportes
         </button>
       </nav>
 
-      <div class="p-3 border-t border-brand-50 relative">
+      <div class="px-3 pt-3 border-t border-brand-50">
+        <div id="user-chip"></div>
+      </div>
+
+      <div class="p-3 relative">
         <button id="btn-settings" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-brand-50 hover:text-brand-700 transition">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           Ajustes de Datos
@@ -147,6 +155,7 @@
         <div id="view-clientes" class="hidden"></div>
         <div id="view-auditoria" class="hidden"></div>
         <div id="view-reportes" class="hidden"></div>
+        <div id="view-usuarios" class="hidden"></div>
       </main>
     </div>
   </div>
@@ -156,6 +165,7 @@
 
   <script src="js/data.js"></script>
   <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/photos.js"></script>
   <script src="js/rate.js"></script>
@@ -167,6 +177,8 @@
   <script src="js/clients.js"></script>
   <script src="js/audit.js"></script>
   <script src="js/reports.js"></script>
+  <script src="js/users.js"></script>
+  <script src="js/login.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

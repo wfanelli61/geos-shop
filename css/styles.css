@@ -239,3 +239,15 @@ html[data-store="ninos"] .brand-avatar-initial { color: var(--kids-rosado); }
   border-radius: 1rem;
   box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.45);
 }
+
+/* ------------------------------------------------- Ocultar sin depender del CDN */
+
+/* `hidden` la define Tailwind, que llega por internet. Si el CDN no carga, la
+   clase no existe y todo lo que debería estar oculto queda a la vista — entre
+   otras cosas, la aplicación entera detrás de la pantalla de entrada.
+   Definirla acá cuesta una línea y cierra ese hueco.
+
+   Sin `!important` a propósito: el patrón `hidden md:block` (que usa la fecha
+   del encabezado) necesita que la regla de Tailwind pueda ganarle cuando sí
+   carga, y las suyas se inyectan después que esta hoja. */
+.hidden { display: none; }

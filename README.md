@@ -43,6 +43,58 @@ Por eso conviene usar **Ajustes de Datos → Descargar respaldo** con frecuencia
 El archivo que baja incluye el catálogo, las ventas, los clientes, los apartados
 y las fotos, y se puede volver a cargar con **Importar respaldo**.
 
+## Entrar al sistema
+
+El sistema pide usuario y contraseña. La primera vez crea cuatro cuentas, una
+por cada modo de acceso, y **la pantalla de entrada las muestra** para que puedas
+probarlas:
+
+| Usuario | Contraseña | Modo de acceso | Entra a |
+|---|---|---|---|
+| `geo` | `admin123` | Administrador | Damas + Niños, y administra usuarios |
+| `ambas` | `ambas123` | Vendedora — Ambas Tiendas | Damas + Niños |
+| `damas` | `damas123` | Vendedora — Tienda de Damas | Solo Damas |
+| `ninos` | `ninos123` | Vendedora — Tienda de Niños | Solo Niños |
+
+> **Cambia estas contraseñas antes de usar el sistema en la tienda.** Están
+> escritas en el código y en este archivo: cualquiera que los vea puede entrar.
+> Se cambian desde **Usuarios → Contraseña** (la administradora) o desde la
+> ficha de abajo a la izquierda → **Cambiar mi contraseña** (cada quien la suya).
+> El aviso amarillo desaparece solo cuando ya no queda ninguna de fábrica.
+
+### Los cuatro modos
+
+- **Administrador** — entra a las dos tiendas y es el único que crea, edita,
+  desactiva y elimina usuarios.
+- **Vendedora — Ambas Tiendas** — vende en las dos tiendas, pero no administra
+  usuarios.
+- **Vendedora — Tienda de Damas** — solo ve la tienda de damas. No hay selector
+  de tienda: no tiene entre qué elegir.
+- **Vendedora — Tienda de Niños** — igual, solo la tienda de niños.
+
+La sesión queda abierta al recargar la página y se cierra desde la ficha del
+usuario, abajo a la izquierda.
+
+El sistema no se queda nunca sin quien lo administre: no deja eliminar,
+desactivar ni cambiarle el rol a la última administradora activa.
+
+### Hasta dónde llega el login
+
+Conviene tenerlo claro. Este sistema corre entero dentro del navegador, sin
+servidor. El login **separa quién usa la caja y a qué tienda entra cada quien**,
+que es lo que hace falta en el día a día de la tienda.
+
+Lo que **no** es: una barrera contra alguien que quiera forzarla. Quien tenga
+acceso a la computadora y sepa usar las herramientas del navegador puede
+saltárselo. Para una barrera de verdad haría falta que los datos vivieran en un
+servidor, no en el navegador.
+
+Lo que sí se cuida: las contraseñas nunca se guardan tal cual. Se guardan
+derivadas con PBKDF2 (150.000 iteraciones, SHA-256) y una sal distinta por
+usuario, así que ni abriendo el respaldo se leen. El sistema tampoco revela si
+un usuario existe: la respuesta es la misma para un usuario inventado que para
+una contraseña equivocada.
+
 ## Funciones
 
 ### Dos tiendas con identidad propia
@@ -100,8 +152,11 @@ ella y el buscador del catálogo también la encuentra.
 ```
 index.html          Estructura de la página
 css/styles.css      Paletas por tienda, tarjetas, fotos y marca
-js/data.js          Tiendas, marca visual, categorías, fotos, proveedores de tasa
-js/db.js            Guardado en el navegador, inventario, migraciones
+js/data.js          Tiendas, marca visual, roles, categorías, fotos, tasa
+js/db.js            Guardado en el navegador, inventario, usuarios, migraciones
+js/auth.js          Contraseñas, sesión y permisos por rol
+js/login.js         Pantalla de entrada
+js/users.js         Administración de usuarios (solo administradora)
 js/ui.js            Formatos, modales, avisos, marca de la tienda, impresión
 js/photos.js        Lectura y reducción de las fotos de prendas
 js/rate.js          Consulta de la tasa del BCV

@@ -9,6 +9,7 @@ const VIEWS = {
   clientes: Clients,
   auditoria: Audit,
   reportes: Reports,
+  usuarios: Users,
 };
 
 async function renderCurrentView() {
@@ -18,7 +19,20 @@ async function renderCurrentView() {
   await module.render();
 }
 
+// Vistas que exigen un permiso para poder abrirse.
+const VIEW_PERMISSIONS = {
+  usuarios: 'manageUsers',
+};
+
 function switchView(viewId) {
+  // Si alguien llega a una vista para la que no tiene permiso (por ejemplo
+  // porque cambió de rol con la vista abierta), se le devuelve al inicio.
+  const permiso = VIEW_PERMISSIONS[viewId];
+  if (permiso && !Auth.can(permiso)) {
+    toast('No tienes acceso a esa sección.', 'error');
+    viewId = 'dashboard';
+  }
+
   AppState.currentView = viewId;
   Object.keys(VIEWS).forEach(id => {
     document.getElementById(`view-${id}`).classList.toggle('hidden', id !== viewId);
@@ -28,10 +42,54 @@ function switchView(viewId) {
   renderCurrentView();
 }
 
+// Cambiar de tienda es la acción que separa a una vendedora de damas de una de
+// niños, así que se comprueba acá y no solo escondiendo botones.
 function switchStore(storeId) {
+  if (!Auth.canAccessStore(storeId)) {
+    toast(`No tienes acceso a la ${storeName(storeId)}.`, 'error');
+    return;
+  }
   AppState.currentStore = storeId;
   setActiveStoreButtons(storeId);
   renderCurrentView();
+}
+
+// Dibuja el selector de tienda con las tiendas del usuario. Quien solo entra a
+// una no ve un selector, sino el nombre de su tienda: no hay nada que elegir.
+function renderStoreSwitcher() {
+  const cont = document.getElementById('store-switcher');
+  if (!cont) return;
+  const permitidas = Auth.allowedStores();
+
+  if (permitidas.length <= 1) {
+    const unica = permitidas[0];
+    cont.innerHTML = unica ? `
+      <div class="flex items-center gap-2 bg-brand-50 rounded-xl px-3 py-2.5">
+        <span class="w-2 h-2 rounded-full bg-brand-500 shrink-0"></span>
+        <span class="text-sm font-medium text-brand-700 truncate">${storeName(unica).replace('Tienda de ', '')}</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-brand-400 ml-auto shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      </div>` : '';
+    return;
+  }
+
+  cont.innerHTML = `
+    <div class="flex bg-brand-50 rounded-xl p-1 gap-1">
+      ${permitidas.map(id => `
+        <button class="store-tab flex-1 px-2 py-2 rounded-lg text-xs sm:text-sm font-medium transition text-center" data-store="${id}">
+          ${storeName(id).replace('Tienda de ', '')}
+        </button>`).join('')}
+    </div>`;
+
+  cont.querySelectorAll('.store-tab').forEach(btn => {
+    btn.addEventListener('click', () => switchStore(btn.dataset.store));
+  });
+}
+
+// Muestra u oculta las secciones del menú según el modo de acceso.
+function applyRoleToNav() {
+  document.querySelectorAll('.nav-tab[data-requiere]').forEach(btn => {
+    btn.classList.toggle('hidden', !Auth.can(btn.dataset.requiere));
+  });
 }
 
 function renderRateBadge(buscando = false) {
@@ -227,8 +285,20 @@ function setupSettingsMenu() {
       const text = await file.text();
       const result = await DB.importData(JSON.parse(text));
       await refreshSettings();
+
+      // El respaldo puede traer otros usuarios: si la cuenta con la que se
+      // entró ya no existe en los datos importados, hay que volver a entrar.
+      const sigueValida = await Auth.refreshCurrentUser();
+      if (!sigueValida) {
+        toast('Datos importados. Vuelve a entrar con un usuario del respaldo.', 'info');
+        Login.show();
+        e.target.value = '';
+        return;
+      }
+
       renderRateBadge();
-      toast(`Importado: ${result.productos} prendas, ${result.ventas} ventas, ${result.clientes} clientes`);
+      toast(`Importado: ${result.productos} prendas, ${result.ventas} ventas, ${result.clientes} clientes${result.usuarios ? `, ${result.usuarios} usuarios` : ''}`);
+      aplicarCambioDeRolPropio();
       renderCurrentView();
     } catch (err) {
       toast('No se pudo leer el archivo: ' + err.message, 'error');
@@ -255,18 +325,23 @@ function setupSettingsMenu() {
   });
 }
 
-async function init() {
-  await DB.ensureSeeded();
-  await refreshSettings();
+// --------------------------------------------------------------- Sesión
 
-  document.querySelectorAll('.nav-tab').forEach(btn => {
-    btn.addEventListener('click', () => switchView(btn.dataset.view));
-  });
-  document.querySelectorAll('.store-tab').forEach(btn => {
-    btn.addEventListener('click', () => switchStore(btn.dataset.store));
-  });
-  setupSidebar();
-  setupSettingsMenu();
+// Arranca la interfaz con una sesión ya abierta. Se llama al entrar y también
+// al retomar una sesión guardada al recargar la página.
+async function bootApp() {
+  const user = Auth.currentUser();
+  if (!user) { Login.show(); return; }
+
+  // La tienda activa tiene que ser una a la que este usuario entre: si venía
+  // seleccionada otra (de una sesión anterior), se corrige antes de dibujar.
+  if (!Auth.canAccessStore(AppState.currentStore)) {
+    AppState.currentStore = Auth.defaultStore();
+  }
+
+  applyRoleToNav();
+  renderStoreSwitcher();
+  renderUserChip();
   renderHeaderDate();
   renderRateBadge();
 
@@ -283,6 +358,55 @@ async function init() {
       toast(`Tasa del día actualizada desde el BCV: Bs ${res.rate}`);
     }
   });
+}
+
+function cerrarSesion() {
+  if (!confirmDialog('¿Cerrar la sesión?')) return;
+  Auth.logout();
+  closeModal();
+  // Se vuelve al punto de partida para que la siguiente persona no herede la
+  // vista ni la tienda de la anterior.
+  AppState.currentView = 'dashboard';
+  AppState.currentStore = 'damas';
+  Login.show();
+}
+
+// La administradora puede editarse a sí misma y cambiarse el modo de acceso.
+// En ese momento hay que rehacer el menú y el selector de tienda, porque las
+// tiendas y las secciones a las que entra pueden haber cambiado.
+function aplicarCambioDeRolPropio() {
+  if (!Auth.currentUser()) { Login.show(); return; }
+  if (!Auth.canAccessStore(AppState.currentStore)) {
+    AppState.currentStore = Auth.defaultStore();
+  }
+  applyRoleToNav();
+  renderStoreSwitcher();
+  renderUserChip();
+  setActiveStoreButtons(AppState.currentStore);
+
+  const permiso = VIEW_PERMISSIONS[AppState.currentView];
+  if (permiso && !Auth.can(permiso)) switchView('dashboard');
+}
+
+async function init() {
+  await DB.ensureSeeded();
+  await refreshSettings();
+
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.addEventListener('click', () => switchView(btn.dataset.view));
+  });
+  setupSidebar();
+  setupSettingsMenu();
+
+  // Si quedó una sesión abierta de la última vez, se retoma; si no, se pide
+  // usuario y contraseña.
+  const user = await Auth.restoreSession();
+  if (user) {
+    Login.hide();
+    await bootApp();
+  } else {
+    Login.show();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);

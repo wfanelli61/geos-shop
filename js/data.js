@@ -37,6 +37,70 @@ function brandOf(storeId) {
   return BRAND_BY_STORE[storeId] || BRAND_BY_STORE.damas;
 }
 
+// ------------------------------------------------------------------- Roles
+
+// Los cuatro modos de acceso. `stores` decide a qué tiendas entra cada rol:
+// es la regla que separa a la vendedora de damas de la de niños.
+//
+// `permissions` queda como el lugar donde se irán agregando los permisos más
+// finos; hoy solo distingue quién administra usuarios, porque de lo contrario
+// cualquier vendedora podría crearse una cuenta de administradora.
+const ROLES = {
+  admin: {
+    id: 'admin',
+    label: 'Administrador',
+    short: 'Admin',
+    description: 'Entra a las dos tiendas y administra los usuarios.',
+    stores: ['damas', 'ninos'],
+    color: 'brand',
+    permissions: { manageUsers: true },
+  },
+  vendedor_ambas: {
+    id: 'vendedor_ambas',
+    label: 'Vendedora — Ambas Tiendas',
+    short: 'Ambas',
+    description: 'Vende en las dos tiendas. No administra usuarios.',
+    stores: ['damas', 'ninos'],
+    color: 'violet',
+    permissions: { manageUsers: false },
+  },
+  vendedor_damas: {
+    id: 'vendedor_damas',
+    label: 'Vendedora — Tienda de Damas',
+    short: 'Damas',
+    description: 'Entra únicamente a la Tienda de Damas.',
+    stores: ['damas'],
+    color: 'pink',
+    permissions: { manageUsers: false },
+  },
+  vendedor_ninos: {
+    id: 'vendedor_ninos',
+    label: 'Vendedora — Tienda de Niños',
+    short: 'Niños',
+    description: 'Entra únicamente a la Tienda de Niños.',
+    stores: ['ninos'],
+    color: 'teal',
+    permissions: { manageUsers: false },
+  },
+};
+
+// Orden en que se muestran los roles al crear o editar un usuario.
+const ROLE_ORDER = ['admin', 'vendedor_ambas', 'vendedor_damas', 'vendedor_ninos'];
+
+function roleOf(roleId) {
+  return ROLES[roleId] || ROLES.vendedor_damas;
+}
+
+// Usuarios que se crean la primera vez, uno por modo, para poder probar los
+// cuatro accesos de entrada. Las contraseñas quedan marcadas como "de fábrica"
+// y el sistema insiste en cambiarlas hasta que se cambien.
+const SEED_USERS = [
+  { name: 'Geo',            username: 'geo',   role: 'admin',          password: 'admin123' },
+  { name: 'Vendedora Todo', username: 'ambas', role: 'vendedor_ambas', password: 'ambas123' },
+  { name: 'Vendedora Damas', username: 'damas', role: 'vendedor_damas', password: 'damas123' },
+  { name: 'Vendedora Niños', username: 'ninos', role: 'vendedor_ninos', password: 'ninos123' },
+];
+
 const CATEGORIES = [
   'Pantalones', 'Blusas', 'Camisas', 'Vestidos Largos', 'Vestidos Cortos',
   'Faldas', 'Shorts', 'Conjuntos', 'Accesorios', 'Otros',
@@ -107,6 +171,8 @@ const STORAGE_KEYS = {
   layaways: 'inv_layaways',
   clients: 'inv_clients',
   settings: 'inv_settings',
+  users: 'inv_users',
+  session: 'inv_session',
   seeded: 'inv_seeded_v3',
 };
 

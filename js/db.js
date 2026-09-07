@@ -113,6 +113,9 @@ const DB = (() => {
     } else {
       migrateSchema();
     }
+    // Va fuera del if: quien ya usaba el sistema antes de que existiera el
+    // login también necesita recibir los usuarios de entrada.
+    await ensureUsersSeeded();
   }
 
   // ---------------------------------------------------------------- Ajustes
@@ -645,6 +648,7 @@ const DB = (() => {
       layaways: read(STORAGE_KEYS.layaways, []),
       clients: read(STORAGE_KEYS.clients, []),
       audits: read(STORAGE_KEYS.audits, []),
+      users: read(STORAGE_KEYS.users, []),
       settings: read(STORAGE_KEYS.settings, DEFAULT_SETTINGS),
     };
   }
@@ -663,10 +667,19 @@ const DB = (() => {
     // que migrateSchema las reconstruya desde las ventas importadas.
     if (data.clients) write(STORAGE_KEYS.clients, data.clients);
     else localStorage.removeItem(STORAGE_KEYS.clients);
+    // Los usuarios solo se reemplazan si el respaldo trae al menos una
+    // administradora activa. Un respaldo viejo (anterior al login) o uno sin
+    // administradoras dejaría el sistema sin nadie que pueda entrar, así que en
+    // ese caso se conservan los usuarios actuales.
+    const usuariosDelRespaldo = Array.isArray(data.users) ? data.users : [];
+    const traeAdmin = usuariosDelRespaldo.some(u => u.role === 'admin' && u.active !== false);
+    if (traeAdmin) write(STORAGE_KEYS.users, usuariosDelRespaldo);
     localStorage.setItem(STORAGE_KEYS.seeded, 'true');
     migrateSchema();
+    await ensureUsersSeeded();
     return {
       productos: data.products.length,
+      usuarios: traeAdmin ? usuariosDelRespaldo.length : 0,
       ventas: data.sales.length,
       movimientos: (data.movements || []).length,
       apartados: (data.layaways || []).length,
@@ -695,8 +708,140 @@ const DB = (() => {
     localStorage.setItem(STORAGE_KEYS.seeded, 'true');
   }
 
+  // ------------------------------------------------------------- Usuarios
+
+  function normalizarUsuario(username) {
+    return (username || '').trim().toLowerCase();
+  }
+
+  async function getUsers() {
+    return read(STORAGE_KEYS.users, [])
+      .slice()
+      .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role)
+        || a.name.localeCompare(b.name, 'es'));
+  }
+
+  async function getUser(id) {
+    return read(STORAGE_KEYS.users, []).find(u => u.id === id) || null;
+  }
+
+  async function getUserByUsername(username) {
+    const u = normalizarUsuario(username);
+    return read(STORAGE_KEYS.users, []).find(x => x.username === u) || null;
+  }
+
+  // Cuántas administradoras activas quedan. Se usa para no dejar el sistema
+  // sin nadie que pueda administrarlo.
+  async function countActiveAdmins(excluyendoId) {
+    return read(STORAGE_KEYS.users, [])
+      .filter(u => u.role === 'admin' && u.active !== false && u.id !== excluyendoId)
+      .length;
+  }
+
+  // Crea o actualiza. La contraseña va aparte (setUserPassword): así una
+  // edición de nombre o rol nunca toca las credenciales por accidente.
+  async function saveUser(datos) {
+    const all = read(STORAGE_KEYS.users, []);
+    const username = normalizarUsuario(datos.username);
+
+    const repetido = all.find(u => u.username === username && u.id !== datos.id);
+    if (repetido) throw new Error(`Ya existe un usuario llamado "${username}".`);
+
+    if (datos.id) {
+      const idx = all.findIndex(u => u.id === datos.id);
+      if (idx < 0) throw new Error('Ese usuario ya no existe.');
+      const anterior = all[idx];
+
+      // Quitarle el rol de administradora a la última que queda dejaría el
+      // sistema sin quien administre usuarios.
+      const dejaDeSerAdmin = anterior.role === 'admin' && datos.role !== 'admin';
+      const seDesactiva = anterior.active !== false && datos.active === false;
+      if ((dejaDeSerAdmin || seDesactiva) && anterior.role === 'admin'
+          && (await countActiveAdmins(anterior.id)) === 0) {
+        throw new Error('Debe quedar al menos una administradora activa.');
+      }
+
+      all[idx] = { ...anterior, ...datos, username };
+      write(STORAGE_KEYS.users, all);
+      return all[idx];
+    }
+
+    const nuevo = {
+      id: uid('u'),
+      name: (datos.name || '').trim(),
+      username,
+      role: datos.role,
+      active: datos.active !== false,
+      salt: null, hash: null, iterations: null,
+      isDefaultPassword: false,
+      createdAt: new Date().toISOString(),
+      lastLogin: null,
+    };
+    all.push(nuevo);
+    write(STORAGE_KEYS.users, all);
+    return nuevo;
+  }
+
+  async function setUserPassword(id, password, { esDeFabrica = false } = {}) {
+    const all = read(STORAGE_KEYS.users, []);
+    const idx = all.findIndex(u => u.id === id);
+    if (idx < 0) throw new Error('Ese usuario ya no existe.');
+    const { salt, hash, iterations } = await Auth.hashPassword(password);
+    all[idx] = { ...all[idx], salt, hash, iterations, isDefaultPassword: esDeFabrica };
+    write(STORAGE_KEYS.users, all);
+    return all[idx];
+  }
+
+  async function deleteUser(id) {
+    const all = read(STORAGE_KEYS.users, []);
+    const user = all.find(u => u.id === id);
+    if (!user) return;
+    if (user.role === 'admin' && (await countActiveAdmins(id)) === 0) {
+      throw new Error('Debe quedar al menos una administradora activa.');
+    }
+    write(STORAGE_KEYS.users, all.filter(u => u.id !== id));
+  }
+
+  async function touchUserLogin(id) {
+    const all = read(STORAGE_KEYS.users, []);
+    const idx = all.findIndex(u => u.id === id);
+    if (idx < 0) return;
+    all[idx] = { ...all[idx], lastLogin: new Date().toISOString() };
+    write(STORAGE_KEYS.users, all);
+  }
+
+  // Crea los cuatro usuarios de entrada la primera vez. Se comprueba aparte del
+  // resto de la semilla: quien ya venía usando el sistema antes del login
+  // también necesita recibirlos, o se quedaría sin poder entrar.
+  async function ensureUsersSeeded() {
+    if (read(STORAGE_KEYS.users, []).length > 0) return;
+    for (const semilla of SEED_USERS) {
+      const creado = await saveUser({
+        name: semilla.name, username: semilla.username, role: semilla.role, active: true,
+      });
+      await setUserPassword(creado.id, semilla.password, { esDeFabrica: true });
+    }
+  }
+
+  // --------------------------------------------------------------- Sesión
+
+  function readSession() {
+    return read(STORAGE_KEYS.session, null);
+  }
+
+  function saveSession(sesion) {
+    write(STORAGE_KEYS.session, sesion);
+  }
+
+  function clearSession() {
+    localStorage.removeItem(STORAGE_KEYS.session);
+  }
+
   return {
     ensureSeeded,
+    getUsers, getUser, getUserByUsername, saveUser, setUserPassword, deleteUser,
+    touchUserLogin, ensureUsersSeeded, countActiveAdmins,
+    readSession, saveSession, clearSession,
     getSettings, saveSettings,
     getStores,
     getProducts, getProduct, saveProduct, saveProductSizes, deleteProduct,

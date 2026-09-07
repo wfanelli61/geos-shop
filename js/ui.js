@@ -14,6 +14,7 @@ const PAGE_META = {
   clientes: { title: 'Clientes', subtitle: 'Historial de compras y contacto' },
   auditoria: { title: 'Auditoría', subtitle: 'Conteo físico vs. sistema' },
   reportes: { title: 'Reportes', subtitle: 'Cuadre por día, semana o mes' },
+  usuarios: { title: 'Usuarios', subtitle: 'Quién entra al sistema y a qué tiendas' },
 };
 
 // Tasa del día en memoria, para no consultar el almacenamiento en cada render.
@@ -142,6 +143,47 @@ function renderBrand(storeId) {
   if (taglineEl) taglineEl.textContent = marca.tagline;
 
   document.title = marca.docTitle;
+}
+
+// Ficha del usuario conectado, al pie de la barra lateral: quién es, con qué
+// modo entró, y por dónde cambia su contraseña o cierra la sesión.
+function renderUserChip() {
+  const cont = document.getElementById('user-chip');
+  if (!cont) return;
+  const user = Auth.currentUser();
+  if (!user) { cont.innerHTML = ''; return; }
+
+  const rol = roleOf(user.role);
+  const iniciales = user.name.trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
+
+  cont.innerHTML = `
+    <div class="relative">
+      <button id="btn-user-menu" class="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-brand-50 transition text-left">
+        <span class="w-9 h-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-semibold shrink-0">${iniciales}</span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-sm font-medium text-slate-700 truncate">${user.name}</span>
+          <span class="block text-[11px] text-slate-400 truncate">${rol.label}</span>
+        </span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+      </button>
+      <div id="user-menu" class="hidden absolute left-0 right-0 bottom-12 bg-white rounded-xl shadow-xl border border-brand-100 p-2 z-50">
+        <p class="text-xs text-slate-400 px-3 pt-2 pb-1 truncate">Conectada como ${user.username}</p>
+        <button id="btn-my-pass" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-brand-50 text-slate-700">Cambiar mi contraseña</button>
+        <button id="btn-logout" class="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-rose-50 text-rose-600">Cerrar sesión</button>
+      </div>
+    </div>`;
+
+  const menu = document.getElementById('user-menu');
+  document.getElementById('btn-user-menu').addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.classList.toggle('hidden');
+  });
+  document.addEventListener('click', () => menu.classList.add('hidden'));
+
+  document.getElementById('btn-my-pass').addEventListener('click', () => {
+    Users.openPasswordModal(Auth.currentUser(), { propia: true });
+  });
+  document.getElementById('btn-logout').addEventListener('click', () => cerrarSesion());
 }
 
 function setActiveStoreButtons(storeId) {
